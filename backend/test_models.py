@@ -9,7 +9,7 @@ from backend.models.model_config import (
 )
 
 
-async def test_model(name, model):
+async def check_model(name, model):
 
     agent = Agent(
         name=name,
@@ -34,17 +34,17 @@ async def test_model(name, model):
 
 async def main():
 
-    await test_model(
+    await check_model(
         "Llama Travel Agent",
         llama_model
     )
 
-    await test_model(
+    await check_model(
         "Qwen Travel Agent",
         qwen_model
     )
 
-    await test_model(
+    await check_model(
         "Gemma Travel Agent",
         gemma_model
     )

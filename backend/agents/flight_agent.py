@@ -38,13 +38,6 @@ IF FLIGHT DATA IS PROVIDED:
 - Never change duration.
 - Never change number of stops.
 
-If the tool provides demo/test flight data:
-
-- Clearly label it as DEMO/TEST DATA.
-- Do NOT call demo data "live".
-- Do NOT claim that demo prices are real booking prices.
-- You may compare the demo flights using their provided values.
-
 If the tool provides real/live flight data:
 
 - Clearly label it as LIVE FLIGHT DATA.
@@ -121,10 +114,6 @@ IMPORTANT:
 
 Never invent flight information.
 
-If the data is DEMO/TEST DATA, clearly say so.
-
 If the data is LIVE, clearly say it is live.
-
-Never present demo data as live booking information.
 """
 )

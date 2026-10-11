@@ -1,4 +1,3 @@
-
 from agents import Runner
 
 from backend.agents.flight_agent import flight_agent
@@ -11,8 +10,7 @@ async def flight_node(state: TravelState):
 
     user_request = state["user_request"]
 
-    # Temporary demo search.
-    # Replace this with a verified API source later.
+    # Call the tool. Currently this returns unavailable.
     flight_data = search_flights(
         origin="HYD",
         destination="GOI",
@@ -22,7 +20,6 @@ async def flight_node(state: TravelState):
     print("\n✈️ Flight Tool Result:")
     print(flight_data)
 
-    is_demo_data = flight_data.get("status") == "demo_data"
     is_live_data = flight_data.get("status") == "live_data"
 
     prompt = f"""
@@ -35,20 +32,14 @@ FLIGHT DATA:
 {flight_data}
 
 DATA STATUS:
-Demo data: {is_demo_data}
 Live data: {is_live_data}
 
 RULES:
 - Use only the flight information supplied by the tool.
 - Never invent flights, airlines, prices, schedules, or availability.
-- If the data is demo data, label it clearly as DEMO/TEST DATA.
-- Never describe demo prices as real or live booking prices.
-- If no flight data is available, state that prices and availability
-  cannot currently be verified.
-- Do not claim a flight is available for booking unless the source
-  explicitly confirms availability.
-- Compare supplied flights by price, duration, and stops only
-  when those values are present.
+- If no flight data is available, explicitly state that prices and availability cannot currently be verified.
+- Do not claim a flight is available for booking unless the source explicitly confirms availability.
+- Compare supplied flights by price, duration, and stops only when those values are present.
 
 Return a concise flight planning result.
 """
@@ -57,8 +48,6 @@ Return a concise flight planning result.
 
     print("✅ Flight Agent finished")
 
-    # Find the lowest price only to describe demo results.
-    # Do not pass demo prices into the actual budget calculation.
     flight_cost = None
 
     flights = flight_data.get("flights", [])
@@ -85,6 +74,6 @@ Return a concise flight planning result.
     return {
         "flight_result": result.final_output,
         "live_flight_data": is_live_data,
-        "demo_flight_data": is_demo_data,
+        "demo_flight_data": False,
         "flight_cost": flight_cost,
     }

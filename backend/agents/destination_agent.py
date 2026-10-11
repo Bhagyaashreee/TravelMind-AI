@@ -25,14 +25,16 @@ destination_agent = Agent(
     3. Popular activities
     4. Suitable areas to stay
     5. General travel tips
-    6. Approximate expense categories
 
     Keep the answer practical and easy to understand.
 
     IMPORTANT:
-    Do not claim that prices, hotel availability, flight availability,
-    events, or other information is currently available unless live data
-    is provided to you.
+    - Do not claim that prices, hotel availability, flight availability,
+      events, or other information is currently available unless live data
+      is provided to you.
+    - Do not generate any estimated prices or expense categories.
+    - Account for realistic travel time between regions. Do not mix distant areas
+      like North Goa and South Goa into a single day without explaining travel implications.
 
     If exact information is unknown, clearly say that it needs to be verified.
     """,

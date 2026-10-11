@@ -31,18 +31,16 @@ final_planner_agent = Agent(
     6. Activities
     7. Safety recommendations
     8. Budget summary
-    9. Estimated total cost
-    10. Money-saving suggestions
+    9. Money-saving suggestions
 
     IMPORTANT RULES:
 
     - Do not invent live prices or availability.
-    - Clearly identify estimates.
     - Do not present unverified information as confirmed facts.
     - If agents provide conflicting information, mention the conflict
       and choose the more reasonable option.
-    - The total estimated cost should be compared with the user's budget.
-    - If the plan exceeds the budget, modify the plan to reduce costs.
+    - Rely ENTIRELY on the provided Budget summary. Do NOT generate your own total cost estimate.
+    - In the Budget summary, present the six budget categories, Total Estimated Cost, Target Budget, and Budget Status in a clean Markdown table with headers: | Category | Estimated Cost | Details / Status |. Surround the table with blank lines.
     - Prioritize the user's preferences.
     - Keep the final answer organized and easy to understand.
 

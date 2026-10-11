@@ -1,49 +1,36 @@
+import os
+from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from agents import (
     OpenAIChatCompletionsModel,
     set_tracing_disabled,
 )
 
-# We are using Ollama locally,
-# so OpenAI tracing is disabled.
+# Load environment variables from .env file
+load_dotenv()
+
+# Tracing disabled
 set_tracing_disabled(True)
 
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    # We don't raise immediately to allow importing, but it will fail on generation
+    print("WARNING: GEMINI_API_KEY environment variable is not set. Please obtain a free API key from Google AI Studio and set it in your .env file.")
 
 # ==========================================
-# Ollama connection
+# Gemini connection via OpenAI compatible endpoint
 # ==========================================
-
-ollama_client = AsyncOpenAI(
-    base_url="http://localhost:11434/v1",
-    api_key="ollama",
+gemini_client = AsyncOpenAI(
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    api_key=api_key or "missing_key",
 )
 
-
-# ==========================================
-# MODEL 1 — Llama
-# ==========================================
-
-llama_model = OpenAIChatCompletionsModel(
-    model="llama3.2:3b",
-    openai_client=ollama_client,
+gemini_model = OpenAIChatCompletionsModel(
+    model="gemini-3.5-flash-lite",
+    openai_client=gemini_client,
 )
 
-
-# ==========================================
-# MODEL 2 — Qwen
-# ==========================================
-
-qwen_model = OpenAIChatCompletionsModel(
-    model="qwen2.5:3b",
-    openai_client=ollama_client,
-)
-
-
-# ==========================================
-# MODEL 3 — Gemma
-# ==========================================
-
-gemma_model = OpenAIChatCompletionsModel(
-    model="gemma3:4b",
-    openai_client=ollama_client,
-)
+# Re-exporting for compatibility with existing agents
+llama_model = gemini_model
+qwen_model = gemini_model
+gemma_model = gemini_model 

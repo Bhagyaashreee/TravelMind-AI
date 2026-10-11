@@ -32,6 +32,7 @@ class TravelState(TypedDict, total=False):
     hotel_cost: float
     food_cost: float
     transportation_cost: float
+    local_transport_cost: float
     activity_cost: float
     emergency_cost: float
 

@@ -1,32 +1,55 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./App.css";
 
 function App() {
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Clean Markdown returned by the AI
   const cleanMarkdown = (text) => {
     if (!text) return "";
 
-    let cleaned = text
+    const lines = text.split("\n");
+    const sectionNames = [
+      "Trip Summary",
+      "Day-by-Day Itinerary",
+      "Flight Information",
+      "Accommodation",
+      "Activities",
+      "Safety Tips",
+      "Budget Summary",
+      "Money-Saving Suggestions",
+    ];
+    const sectionRegex = new RegExp(
+      `^(?:###?\\s*)?\\*\\*(${sectionNames.join("|")})\\*\\*:?\\s*$`,
+      "i"
+    );
+
+    const processedLines = lines.map((line) => {
+      // Never alter table rows or content inside tables
+      if (line.trim().startsWith("|")) {
+        return line;
+      }
+      // Convert standalone bold section headers into markdown ## headings
+      const match = line.trim().match(sectionRegex);
+      if (match) {
+        return `\n## ${match[1]}\n`;
+      }
+      return line;
+    });
+
+    let cleaned = processedLines
+      .join("\n")
       // Remove escaped backslashes
       .replace(/\\\\/g, "")
-
       // Remove unnecessary TravelMind heading
       .replace(/^###\s*\*TravelMind AI\*$/gim, "")
-
-      // Convert important sections into headings
-      .replace(
-        /\*\*(Trip Summary|Day-by-Day Itinerary|Flight Information|Accommodation|Activities|Safety Tips|Budget Summary|Money-Saving Suggestions)\*\*/gi,
-        "\n\n## $1\n\n"
-      )
-
       // Remove excessive blank lines
       .replace(/\n{3,}/g, "\n\n")
-
       .trim();
 
     return cleaned;
@@ -34,10 +57,11 @@ function App() {
 
   // Send request to FastAPI backend
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (loading || !message.trim()) return;
 
     setLoading(true);
     setResponse("");
+    setError("");
 
     try {
       const res = await fetch("http://127.0.0.1:8000/plan", {
@@ -50,12 +74,40 @@ function App() {
         }),
       });
 
-      const data = await res.json();
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
 
       if (!res.ok) {
-        throw new Error(
-          data.detail || "Something went wrong while generating the plan."
-        );
+        let errorMsg = "";
+
+        if (data) {
+          if (typeof data.detail === "string") {
+            errorMsg = data.detail;
+          } else if (typeof data.message === "string") {
+            errorMsg = data.message;
+          } else if (typeof data.error === "string") {
+            errorMsg = data.error;
+          } else if (Array.isArray(data.detail)) {
+            errorMsg = data.detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+          } else if (typeof data.detail === "object" && data.detail !== null) {
+            errorMsg = data.detail.message || JSON.stringify(data.detail);
+          }
+        }
+
+        if (!errorMsg) {
+          if (res.status === 429) {
+            errorMsg =
+              "The Gemini API request quota has been exhausted (HTTP 429: RESOURCE_EXHAUSTED). Please wait a few moments before trying again.";
+          } else {
+            errorMsg = `Server error (${res.status}): ${res.statusText || "Unable to complete request"}`;
+          }
+        }
+
+        throw new Error(errorMsg);
       }
 
       const result =
@@ -66,10 +118,13 @@ function App() {
         JSON.stringify(data, null, 2);
 
       setResponse(cleanMarkdown(result));
-    } catch (error) {
-      setResponse(
-        `❌ Unable to generate the travel plan.\n\n**Error:** ${error.message}`
-      );
+    } catch (err) {
+      let displayMessage = err.message;
+      if (err.message === "Failed to fetch") {
+        displayMessage =
+          "Unable to connect to the backend server. Please verify that the FastAPI backend is running on http://127.0.0.1:8000.";
+      }
+      setError(displayMessage);
     } finally {
       setLoading(false);
     }
@@ -77,7 +132,9 @@ function App() {
 
   // Quick trip buttons
   const selectTrip = (trip) => {
+    if (loading) return;
     setMessage(trip);
+    setError("");
   };
 
   return (
@@ -96,7 +153,7 @@ function App() {
       <main className="chat-container">
 
         {/* WELCOME SCREEN */}
-        {!response && !loading && (
+        {!response && !error && !loading && (
           <div className="welcome">
 
             <div className="welcome-icon">
@@ -207,6 +264,33 @@ function App() {
         )}
 
 
+        {/* ERROR DISPLAY */}
+        {error && !loading && (
+          <div className="error-card">
+            <div className="error-header">
+              <span className="error-icon">⚠️</span>
+              <div>
+                <h2>Notice: Request Could Not Be Completed</h2>
+                <p>Gemini API Quota / Service Message</p>
+              </div>
+            </div>
+
+            <div className="error-body">
+              <p>{error}</p>
+            </div>
+
+            <div className="error-footer">
+              <button
+                className="error-dismiss-btn"
+                onClick={() => setError("")}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+
         {/* TRAVEL PLAN RESULT */}
         {response && !loading && (
           <div className="result-card">
@@ -240,7 +324,7 @@ function App() {
             {/* AI RESPONSE */}
             <div className="result-content">
 
-              <ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {response}
               </ReactMarkdown>
 
@@ -253,6 +337,7 @@ function App() {
               onClick={() => {
                 setResponse("");
                 setMessage("");
+                setError("");
               }}
             >
               ✨ Plan Another Trip
@@ -277,7 +362,7 @@ function App() {
             <button
               className="plan-button"
               onClick={sendMessage}
-              disabled={!message.trim()}
+              disabled={loading || !message.trim()}
             >
               {loading ? "Planning..." : "Plan My Trip ✈️"}
             </button>
